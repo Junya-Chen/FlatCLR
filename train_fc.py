@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import copy
 import os
 import pickle
 import torchvision
@@ -43,15 +44,15 @@ def train_fc(epo, train_loader, test_loader, args):
         features[split]['features'] = []
         features[split]['labels'] = []
         for counter, (x_batch, y_batch) in enumerate(tqdm(loader)):
-            x_batch = x_batch.to(args.device)
-            features[split]['features'].append(model(x_batch).detach().cpu())
-            features[split]['labels'].append(y_batch)
-        features[split]['features'] = torch.cat(features[split]['features'], 0)
-        features[split]['labels'] = torch.cat(features[split]['labels'], 0)
+	        x_batch = x_batch.to(args.device)
+	        features[split]['features'].append(copy.deepcopy(model(x_batch).detach().cpu()))
+	        features[split]['labels'].append(copy.deepcopy(y_batch))
+	    features[split]['features'] = torch.cat(features[split]['features'], 0)
+	    features[split]['labels'] = torch.cat(features[split]['labels'], 0)
         
         
-    with open('features.pickle', 'wb') as f:
-        pickle.dump(features, f)
+  	with open('features.pickle', 'wb') as f:
+	    pickle.dump(features, f, protocol=4)
     del model, features, checkpoint
 
     with open('features.pickle', 'rb') as f:
@@ -119,7 +120,6 @@ def train_fc(epo, train_loader, test_loader, args):
             fc_optimizer.step()
             if fc_scheduler:
                 fc_scheduler.step()
-            print('epoch', epoch, '------------', counter)
             
         top1_train_accuracy /= (counter + 1)
         top1_accuracy = 0
