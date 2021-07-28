@@ -14,13 +14,17 @@ class ContrastiveLearningDataset:
     def get_simclr_pipeline_transform(size, s=1, gaussian=True):
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
         color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
+        kernel_size = int(0.1 * size)
+        if kernel_size%2==0:
+            kernel_size = kernel_size+1 
         if gaussian:
             data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
                                                   transforms.RandomHorizontalFlip(),
                                                   transforms.RandomApply([color_jitter], p=0.8),
                                                   transforms.RandomGrayscale(p=0.2),
-                                                  GaussianBlur(kernel_size=int(0.1 * size)),
+                                                  GaussianBlur(kernel_size=kernel_size, p=0.5),
                                                   transforms.ToTensor()])
+
         else:
             data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
                                                   transforms.RandomHorizontalFlip(),
