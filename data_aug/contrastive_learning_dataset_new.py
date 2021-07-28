@@ -187,7 +187,7 @@ def get_simclr_pipeline_newtransform(size, device, s=1, gaussian = False):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomApply([color_jitter], p=0.8),
                 transforms.RandomGrayscale(p=0.2),
-                newGaussianBlur(kernel_size=int(0.1 * size), device=device)
+                transforms.RandomApply([newGaussianBlur(kernel_size=int(0.1 * size), device=device)],p=.5)
             ]
     else:
          transforms_batch = [
