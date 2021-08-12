@@ -37,7 +37,7 @@ def train_fc(epo, train_loader, test_loader, args):
         model.fc = SupervisedHead(in_channel, num_classes=1000)
     
     for name, param in model.named_parameters():
-        if name.startswith('fc.linear_layer'):
+        if not name.startswith('fc.linear_layer'):
             param.requires_grad = False
     
     if args.fc_optimizer == 'adam':
