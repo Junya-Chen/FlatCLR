@@ -3,12 +3,13 @@ import numpy as np
 import os
 import pickle
 import torchvision
-from tqdm import tqdm_notebook
+from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 from utils import accuracy, SimpleDataset
 import torchvision.transforms as transforms
 from models.load_model import load_model
 from models.utils import SupervisedHead, Identity
+from optimizer.load_optimizer_scheduler import load_fc_optimizer_scheduler
 
 def train_fc(epo, train_loader, test_loader, args):  
     checkpoint = torch.load(os.path.join(args.checkpoint_dir, 'checkpoint_{:04d}.pth.tar'.format(epo)),
@@ -35,23 +36,12 @@ def train_fc(epo, train_loader, test_loader, args):
         model.fc = SupervisedHead(in_channel, num_classes=200)
     elif args.dataset_name == 'imagenet':
         model.fc = SupervisedHead(in_channel, num_classes=1000)
-    
-    for name, param in model.named_parameters():
-        if not name.startswith('fc.linear_layer'):
-            param.requires_grad = False
-    
-    if args.fc_optimizer == 'adam':
-        fc_optimizer = torch.optim.Adam(model.parameters(), lr=args.fc_lr, weight_decay=args.fc_weight_decay)
-    elif args.fc_optimizer == 'lars':
-        fc_optimizer = LARS(model.parameters(), lr=args.fc_lr, weight_decay=args.fc_weight_decay,
-                        exclude_from_weight_decay=["batch_normalization", "bias"])
-    elif args.fc_optimizer == 'sgd':
-        fc_optimizer = torch.optim.SGD(model.parameters(), lr=args.fc_lr, 
-                                    weight_decay=args.fc_weight_decay, momentum=args.fc_momentum)          
-    
+        
+    fc_optimizer, fc_scheduler = load_fc_optimizer_scheduler(model, args, train_loader) 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
     model = model.to(args.device)
+    
     criterion = torch.nn.CrossEntropyLoss().to(args.device)
 
     best_epoch = 0
@@ -86,6 +76,7 @@ def train_fc(epo, train_loader, test_loader, args):
 
         top1_accuracy /= (counter + 1)
         top5_accuracy /= (counter + 1)
+        
         
         if best_top1_accuracy < top1_accuracy:
             best_top1_accuracy = top1_accuracy
