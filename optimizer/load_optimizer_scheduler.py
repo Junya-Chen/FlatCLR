@@ -18,7 +18,7 @@ def load_optimizer_scheduler(model, args, train_loader):
     if args.scheduler == 'constant':
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=[args.epochs * len(train_loader) * 10, ], 
-                                                         gamma=1)
+                                                         gamma=.1)
     elif args.scheduler == 'cosine':
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer,
@@ -31,12 +31,15 @@ def load_optimizer_scheduler(model, args, train_loader):
     elif args.scheduler == None:
         scheduler = None
     else:
-        print("unknown schduler: {}".format(args.scheduler))
+        print("unknown scheduler: {}".format(args.scheduler))
         assert False
     return optimizer, scheduler
 
 def load_fc_optimizer_scheduler(model, args, train_loader):
-    if args.fc_optimizer == 'adam':
+    if args.fc_optimizer =='LBFGS':
+        optimizer = torch.optim.LBFGS(model.parameters())
+
+    elif args.fc_optimizer == 'adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.fc_lr, weight_decay=args.fc_weight_decay)
     elif args.fc_optimizer == 'lars':
         optimizer = LARS(model.parameters(), lr=args.fc_lr, weight_decay=args.fc_weight_decay,
@@ -51,7 +54,7 @@ def load_fc_optimizer_scheduler(model, args, train_loader):
     if args.fc_scheduler == 'constant':
         scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
                                                          milestones=[args.fc_epochs * len(train_loader) * 10, ], 
-                                                         gamma=1)
+                                                         gamma=.1)
     elif args.fc_scheduler == 'cosine':
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer,
@@ -65,4 +68,8 @@ def load_fc_optimizer_scheduler(model, args, train_loader):
     else:
         print("unknown schduler: {}".format(args.scheduler))
         assert False
+        
+    for name, param in model.named_parameters():
+        if not name.startswith('fc.linear_layer'):
+            param.requires_grad = False
     return optimizer, scheduler
