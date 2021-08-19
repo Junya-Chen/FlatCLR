@@ -116,7 +116,7 @@ class FlatCLR(object):
                     
                     assert loss_vec.shape == (len(logits),1)
                     dummy_logits = torch.cat([torch.zeros(logits.size(0),1).to(self.args.device), logits],1)
-                    loss = loss_vec.mean()-1 + self.criterion(logits, labels).detach() #+
+                    loss = loss_vec.mean()-1 + self.criterion(dummy_logits, labels).detach() #+
 
                 self.optimizer.zero_grad()
                 scaler.scale(loss).backward()
