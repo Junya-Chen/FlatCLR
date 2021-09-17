@@ -56,10 +56,6 @@ To train the linear classification on Imagenet, try the following command:
 python main.py --dataset_name=imagenet --train_mode=eval --transfer_mode=linear_eval --checkpoint_dir=results/imagenet/512_FlatCLR/01-06-2021-21-52-10
 ```
 
-If your machine cannot afford a large batchsize, try this:
-First extract all the features from the pretrained simclr/flatclr model with a smaller batch size (e.g.,256) and dump the features through pickle.
-Then use a larger batch size (4096) to run the linear classifier only, which means to start the train_fc.py from reading pickle file.
-
 ### Finetune
 To finetune the classifier, try the following command:
 ```
