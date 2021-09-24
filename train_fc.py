@@ -159,27 +159,28 @@ def train_fc(epo, train_loader, test_loader, args):
 
         logging.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
 
-        logging.info("Training has finished.")
-        # save model checkpoints
-        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
-        if fc_scheduler:
-            save_checkpoint({
-                    'model': model,
-                    'fc_model_state_dict': model.module.fc.state_dict(),
-                    'fc_optimizer': fc_optimizer.state_dict(),
-                    'fc_scheduler': fc_scheduler.state_dict(),
-                    'best_top1_acc': best_top1_accuracy,
-                    'best_top5_acc': best_top5_accuracy,
-                    'best_epoch': best_epoch,
-            }, is_best=False, filename=os.path.join(writer.log_dir, checkpoint_name))
-        else:
-            save_checkpoint({
-                    'model': args.model,
-                    'fc_model_state_dict': model.module.fc.state_dict(),
-                    'fc_optimizer': fc_optimizer.state_dict(),
-                    'best_top1_acc': best_top1_accuracy,
-                    'best_top5_acc': best_top5_accuracy,
-                    'best_epoch': best_epoch,
-            }, is_best=False, filename=os.path.join(writer.log_dir, checkpoint_name))
-    
-        logging.info(f"Model checkpoint and metadata has been saved at {writer.log_dir}.")
+    logging.info("Training has finished.")
+    # save model checkpoints
+    checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
+    if fc_scheduler:
+        save_checkpoint({
+                'model': model,
+                'fc_model_state_dict': model.module.fc.state_dict(),
+                'fc_optimizer': fc_optimizer.state_dict(),
+                'fc_scheduler': fc_scheduler.state_dict(),
+                'best_top1_acc': best_top1_accuracy,
+                'best_top5_acc': best_top5_accuracy,
+                'best_epoch': best_epoch,
+        }, is_best=False, filename=os.path.join(writer.log_dir, checkpoint_name))
+    else:
+        save_checkpoint({
+                'model': args.model,
+                'fc_model_state_dict': model.module.fc.state_dict(),
+                'fc_optimizer': fc_optimizer.state_dict(),
+                'best_top1_acc': best_top1_accuracy,
+                'best_top5_acc': best_top5_accuracy,
+                'best_epoch': best_epoch,
+        }, is_best=False, filename=os.path.join(writer.log_dir, checkpoint_name))
+
+    logging.info(f"Model checkpoint and metadata has been saved at {writer.log_dir}.")
+    return top1_train_accuracy, best_top1_accuracy, best_top5_accuracy, best_epoch
