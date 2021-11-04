@@ -18,45 +18,57 @@ class SimCLR(object):
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = kwargs['model']
-        if torch.cuda.device_count() > 1:
-            print('multiple gpu')
-            self.model = torch.nn.DataParallel(kwargs['model'])
-        self.model = self.model.to(self.args.device)
         self.optimizer = kwargs['optimizer']
         self.scheduler = kwargs['scheduler']
         
         if self.args.train_from:
             checkpoint = torch.load(os.path.join(self.args.log_dir, self.args.train_from),
-                                    map_location=self.args.device) 
+                                    map_location='cpu') 
             log_dir = self.args.log_dir
             self.epo_0 = int(self.args.train_from[-12:-8])+1
             model_state_dict = checkpoint['model_state_dict']
+            for k in list(model_state_dict.keys()):
+                if k.startswith('module.'):
+                    model_state_dict[k[len("module."):]] = model_state_dict[k]
+                del model_state_dict[k]
+                
             self.model.load_state_dict(model_state_dict)
+            if torch.cuda.device_count() > 1:
+                print('multiple gpu')
+                self.model = torch.nn.DataParallel(kwargs['model'])
+            self.model = self.model.to(self.args.device)
             optimizer_state_dict = checkpoint['optimizer']
             self.optimizer.load_state_dict(optimizer_state_dict) 
-            scheduler_state_dict = checkpoint['scheduler']
-            self.scheduler.load_state_dict(scheduler_state_dict) 
+            if self.scheduler:
+                scheduler_state_dict = checkpoint['scheduler']
+                self.scheduler.load_state_dict(scheduler_state_dict) 
+            del checkpoint
             
         elif self.args.from_pretrained==False:
             now = datetime.now()
             dt_string = now.strftime("%d-%m-%Y-%H-%M-%S")
-            log_dir=os.path.join('results',f"{self.args.dataset_name}", f"{self.args.batch_size}_SimCLR", dt_string)
+            log_dir=os.path.join('results',f"{self.args.dataset_name}", f"{self.args.batch_size}_larsSimCLR", dt_string)
             self.epo_0 = 0
+            if torch.cuda.device_count() > 1:
+                print('multiple gpu')
+                self.model = torch.nn.DataParallel(kwargs['model'])
+            self.model = self.model.to(self.args.device)
             
-        else:            
-            checkpoint = torch.load('results/imagenet/512_SimCLR/15-05-2021-06-02-45/checkpoint_0009.pth.tar',
+        else: 
+            print('from pretrained')           
+            checkpoint = torch.load('results/imagenet/512_SimCLR/checkpoint_0050.pth.tar',
                                     map_location=self.args.device) 
             model_state_dict = checkpoint['model_state_dict']
             self.model.load_state_dict(model_state_dict)
             now = datetime.now()
             dt_string = now.strftime("%d-%m-%Y-%H-%M-%S")
-            log_dir=os.path.join('results',f"{self.args.dataset_name}", f"{self.args.batch_size}_SimCLR", dt_string)
+            log_dir=os.path.join('results',f"{self.args.dataset_name}", f"{self.args.batch_size}_adamSimCLR", dt_string)
             self.epo_0 = 0
 
         self.writer = SummaryWriter(log_dir)        
         logging.basicConfig(filename=os.path.join(self.writer.log_dir, 'training.log'), level=logging.DEBUG)
         self.criterion = torch.nn.CrossEntropyLoss().to(self.args.device)
-
+        
     def info_nce_loss(self, features):
         labels = torch.cat([torch.arange(self.args.batch_size) for i in range(self.args.n_views)], dim=0)
         labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).float()
